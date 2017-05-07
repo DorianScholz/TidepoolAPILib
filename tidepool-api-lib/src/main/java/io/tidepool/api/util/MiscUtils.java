@@ -10,7 +10,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import io.tidepool.api.TidepoolAPIClient;
+import io.tidepool.api.APIClient;
 import io.tidepool.api.data.Profile;
 import io.tidepool.api.data.User;
 
@@ -59,7 +59,7 @@ public class MiscUtils {
         return "v" + ver;// + " on " + MainActivity.getInstance().getSelectedServer();
     }
 
-    static DateFormat _jsonDateFormat = new SimpleDateFormat(TidepoolAPIClient.MESSAGE_DATE_FORMAT, Locale.US);
+    static DateFormat _jsonDateFormat = new SimpleDateFormat(APIClient.MESSAGE_DATE_FORMAT, Locale.US);
 
     public static String dateToJSONString(Date date) {
         return _jsonDateFormat.format(date);

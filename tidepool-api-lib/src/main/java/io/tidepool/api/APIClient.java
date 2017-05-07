@@ -61,13 +61,13 @@ import io.tidepool.api.data.User;
 import io.tidepool.api.util.HashtagUtils;
 import io.tidepool.api.util.MiscUtils;
 
-public class TidepoolAPIClient {
+public class APIClient {
 
     public static final String PRODUCTION = "Production";
     public static final String DEVELOPMENT = "Development";
     public static final String STAGING = "Staging";
 
-    private static final String LOG_TAG = "TidepoolAPIClient";
+    private static final String LOG_TAG = "APIClient";
 
     // Date format for most things,
     public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZZZZZ";
@@ -79,7 +79,7 @@ public class TidepoolAPIClient {
     private static final String HEADER_SESSION_ID = "x-tidepool-session-token";
 
     // Key into the shared preferences database for our own preferences
-    private static final String PREFS_KEY = "TidepoolAPIClient";
+    private static final String PREFS_KEY = "APIClient";
 
     // Map of server names to base URLs
     private static final Map<String, URL> __servers;
@@ -115,7 +115,7 @@ public class TidepoolAPIClient {
      * @param context Context
      * @param server  Server to connect to, one of Production, Development or Staging
      */
-    public TidepoolAPIClient(Context context, String server) {
+    public APIClient(Context context, String server) {
         setServer(server);
 
         // Set up the disk cache for caching responses
@@ -219,7 +219,7 @@ public class TidepoolAPIClient {
         Realm realm = Realm.getDefaultInstance();
         try {
             realm.beginTransaction();
-            realm.where(Session.class).findAll().clear();
+            realm.where(Session.class).findAll().deleteAllFromRealm();
             realm.commitTransaction();
         } finally {
             realm.close();
@@ -290,7 +290,7 @@ public class TidepoolAPIClient {
                         realm.beginTransaction();
 
                         // Get rid of any old sessions
-                        realm.where(Session.class).findAll().clear();
+                        realm.where(Session.class).findAll().deleteAllFromRealm();
 
                         // Create the session in the database
                         Session s = realm.createObject(Session.class);
@@ -378,7 +378,7 @@ public class TidepoolAPIClient {
 
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-                return TidepoolAPIClient.this.getHeaders();
+                return APIClient.this.getHeaders();
             }
         };
 
@@ -492,7 +492,7 @@ public class TidepoolAPIClient {
         }) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-                return TidepoolAPIClient.this.getHeaders();
+                return APIClient.this.getHeaders();
             }
 
             @Override
@@ -555,7 +555,7 @@ public class TidepoolAPIClient {
         }) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-                return TidepoolAPIClient.this.getHeaders();
+                return APIClient.this.getHeaders();
             }
 
             @Override
@@ -596,7 +596,7 @@ public class TidepoolAPIClient {
                 Realm realm = Realm.getDefaultInstance();
                 try {
                     realm.beginTransaction();
-                    realm.where(Note.class).equalTo("id", noteId).findAll().clear();
+                    realm.where(Note.class).equalTo("id", noteId).findAll().deleteAllFromRealm();
                     realm.commitTransaction();
                 } finally {
                     realm.close();
@@ -612,7 +612,7 @@ public class TidepoolAPIClient {
         }) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-                return TidepoolAPIClient.this.getHeaders();
+                return APIClient.this.getHeaders();
             }
         };
 
@@ -625,15 +625,15 @@ public class TidepoolAPIClient {
         Realm realm = Realm.getDefaultInstance();
         try {
             realm.beginTransaction();
-            realm.where(CurrentUser.class).findAll().clear();
-            realm.where(EmailAddress.class).findAll().clear();
-            realm.where(Hashtag.class).findAll().clear();
-            realm.where(Note.class).findAll().clear();
-            realm.where(Patient.class).findAll().clear();
-            realm.where(Profile.class).findAll().clear();
-            realm.where(Session.class).findAll().clear();
-            realm.where(SharedUserId.class).findAll().clear();
-            realm.where(User.class).findAll().clear();
+            realm.where(CurrentUser.class).findAll().deleteAllFromRealm();
+            realm.where(EmailAddress.class).findAll().deleteAllFromRealm();
+            realm.where(Hashtag.class).findAll().deleteAllFromRealm();
+            realm.where(Note.class).findAll().deleteAllFromRealm();
+            realm.where(Patient.class).findAll().deleteAllFromRealm();
+            realm.where(Profile.class).findAll().deleteAllFromRealm();
+            realm.where(Session.class).findAll().deleteAllFromRealm();
+            realm.where(SharedUserId.class).findAll().deleteAllFromRealm();
+            realm.where(User.class).findAll().deleteAllFromRealm();
             realm.commitTransaction();
         } finally {
             realm.close();
@@ -748,7 +748,7 @@ public class TidepoolAPIClient {
                         realm.beginTransaction();
 
                         // Out with the old
-                        realm.where(SharedUserId.class).findAll().clear();
+                        realm.where(SharedUserId.class).findAll().deleteAllFromRealm();
 
                         while (iter.hasNext()) {
                             String viewableId = (String) iter.next();
@@ -775,7 +775,7 @@ public class TidepoolAPIClient {
             }) {
                 @Override
                 public Map<String, String> getHeaders() throws AuthFailureError {
-                    return TidepoolAPIClient.this.getHeaders();
+                    return APIClient.this.getHeaders();
                 }
             };
 
@@ -842,7 +842,7 @@ public class TidepoolAPIClient {
         }) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-                return TidepoolAPIClient.this.getHeaders();
+                return APIClient.this.getHeaders();
             }
         };
 
@@ -887,14 +887,14 @@ public class TidepoolAPIClient {
                     // through the messages
                     realm.where(Hashtag.class)
                             .equalTo("ownerId", userId)
-                            .findAll().clear();
+                            .findAll().deleteAllFromRealm();
 
                     // Also get rid of the messages for this user in the specified date range, in case some were deleted.
                     realm.where(Note.class)
                             .equalTo("groupid", userId)
                             .greaterThan("timestamp", fromDate)
                             .lessThanOrEqualTo("timestamp", toDate)
-                            .findAll().clear();
+                            .findAll().deleteAllFromRealm();
 
                     // Odd date format in the messages
                     Gson gson = getGson(MESSAGE_DATE_FORMAT);
@@ -964,7 +964,7 @@ public class TidepoolAPIClient {
         }) {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
-                return TidepoolAPIClient.this.getHeaders();
+                return APIClient.this.getHeaders();
             }
         };
 
