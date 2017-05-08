@@ -68,6 +68,8 @@ public class APIClient {
     public static final String DEVELOPMENT = "Development";
     public static final String STAGING = "Staging";
 
+    private static final String UPLOADS = "Uploads";
+
     private static final String LOG_TAG = "APIClient";
 
     // Date format for most things,
@@ -88,14 +90,11 @@ public class APIClient {
     // RequestQueue our requests will be made on
     private RequestQueue _requestQueue;
 
-    // Base URL for network requests
+    // Base URL for network requests (e.g. https:://api.tidepool.org)
     private URL _baseURL;
 
-    // Context used to create us
-    private Context _context;
-
-    // Realm instance
-    private Realm _realm;
+    // Base URL for device data uploads (e.g. https:://uploads.tidepool.org)
+    private URL _uploadBaseURL;
 
     // Static initialization
     static {
@@ -104,6 +103,10 @@ public class APIClient {
             __servers.put(PRODUCTION, new URL("https://api.tidepool.org"));
             __servers.put(DEVELOPMENT, new URL("https://dev-api.tidepool.org"));
             __servers.put(STAGING, new URL("https://stg-api.tidepool.org"));
+
+            __servers.put(PRODUCTION + UPLOADS, new URL("https://uploads.tidepool.org"));
+            __servers.put(DEVELOPMENT + UPLOADS, new URL("https://dev-uploads.tidepool.org"));
+            __servers.put(STAGING + UPLOADS, new URL("https://stg-uploads.tidepool.org"));
 
         } catch (MalformedURLException e) {
             // Should never happen
@@ -161,6 +164,12 @@ public class APIClient {
             Log.e(LOG_TAG, "No server called " + serverType + " found in map");
         } else {
             _baseURL = url;
+        }
+        url = __servers.get(serverType + UPLOADS);
+        if (url == null) {
+            Log.e(LOG_TAG, "No server called " + serverType + UPLOADS + " found in map");
+        } else {
+            _uploadBaseURL = url;
         }
     }
 
@@ -329,8 +338,6 @@ public class APIClient {
             }
         };
 
-        // Tag the request with our context so they all can be removed if the activity goes away
-        req.setTag(_context);
         _requestQueue.add(req);
         return req;
     }
@@ -630,6 +637,58 @@ public class APIClient {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 return APIClient.this.getHeaders();
+            }
+        };
+
+        _requestQueue.add(request);
+        return request;
+    }
+
+
+    public static abstract class UploadDeviceDataListener {
+        public abstract void dataUploaded(List data, Exception error);
+    }
+
+    public Request uploadDeviceData(final List data, final UploadDeviceDataListener listener) {
+        // Build the URL
+        String url = null;
+        try {
+            url = new URL(getUploadBaseURL(), "/data/").toString();
+        } catch (MalformedURLException e) {
+            listener.dataUploaded(null, e);
+            return null;
+        }
+
+        final String dataJson = getGson(MESSAGE_DATE_FORMAT).toJson(data);
+
+        StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                Log.d(LOG_TAG, "Upload data response (indices of duplicate data): " + response);
+
+                listener.dataUploaded(data, null);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(LOG_TAG, "Failed to upload data: " + error);
+                listener.dataUploaded(null, error);
+            }
+        }) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                return APIClient.this.getHeaders();
+            }
+
+            @Override
+            public byte[] getBody() throws AuthFailureError {
+                Log.d(LOG_TAG, "Upload data body: " + dataJson);
+                return dataJson.getBytes();
+            }
+
+            @Override
+            public String getBodyContentType() {
+                return "application/json";
             }
         };
 
@@ -992,6 +1051,10 @@ public class APIClient {
 
     protected URL getBaseURL() {
         return _baseURL;
+    }
+
+    protected URL getUploadBaseURL() {
+        return _uploadBaseURL;
     }
 
     /**

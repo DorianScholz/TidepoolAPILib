@@ -16,9 +16,11 @@ import org.junit.runners.MethodSorters;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +29,7 @@ import java.util.regex.Pattern;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmList;
+import io.tidepool.api.data.DeviceDataCBG;
 import io.tidepool.api.data.Note;
 import io.tidepool.api.data.Profile;
 import io.tidepool.api.data.SharedUserId;
@@ -312,6 +315,43 @@ public class APIClientTest {
         } finally {
             realm.close();
         }
+    }
+
+    @Test
+    public void testUploadDeviceData() {
+        testSignInSuccess();
+
+        List<DeviceDataCBG> data = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++) {
+            DeviceDataCBG datum = new DeviceDataCBG();
+            datum.setDeviceId("test_cgm_device_id");
+            datum.setUploadId("");
+
+            datum.setUnits("mg/dL");
+            datum.setValue(50 + 2 * i);
+
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(new Date());
+            cal.add(Calendar.MINUTE, -15 * i);
+            datum.setTime(cal.getTime());
+
+            data.add(datum);
+        }
+
+        mAwaitDone = new AtomicBoolean(false);
+        mAPIClient.uploadDeviceData(data, new APIClient.UploadDeviceDataListener() {
+            @Override
+            public void dataUploaded(List data, Exception error) {
+                mAWaitHashMap = new HashMap<String, Object>();
+                mAWaitHashMap.put("error", error);
+                mAwaitDone.set(true);
+            }
+        });
+        await().atMost(10, TimeUnit.SECONDS).untilTrue(mAwaitDone);
+
+        Exception error = (Exception) mAWaitHashMap.get("error");
+        assertThat(error, nullValue());
     }
 
     private void _testAllOn(String environment) throws AssertionError {
