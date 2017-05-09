@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import io.realm.Realm;
-import io.realm.RealmConfiguration;
 import io.realm.RealmList;
 import io.tidepool.api.data.DeviceDataCBG;
 import io.tidepool.api.data.Note;
@@ -49,19 +48,14 @@ import static org.hamcrest.Matchers.nullValue;
 public class APIClientTest {
     @Before
     public void setUp() throws Exception {
-        Realm.init(InstrumentationRegistry.getInstrumentation().getTargetContext());
-        mRealmConfiguration = new RealmConfiguration.Builder()
-                .name("test.realm")
-                .build();
-        Realm.deleteRealm(mRealmConfiguration);
-        APIClient.setRealmConfiguration(mRealmConfiguration);
-
         _setUpAPIClient(APIClient.DEVELOPMENT);
+        mAPIClient.setRealmName("test.realm");
+        mAPIClient.deleteRealm();
     }
 
     @After
     public void tearDown() {
-        Realm.deleteRealm(mRealmConfiguration);
+        mAPIClient.deleteRealm();
     }
 /*
     @Test
@@ -165,7 +159,7 @@ public class APIClientTest {
     public void testGetProfile() {
         testSignInSuccess();
 
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = mAPIClient.getRealmInstance();
         try {
             mAwaitDone = new AtomicBoolean(false);
             mAPIClient.getProfileForUserId(mAPIClient.getUser().getUserid(), new APIClient.ProfileListener() {
@@ -192,7 +186,7 @@ public class APIClientTest {
     public void testGetViewableUsers() {
         testSignInSuccess();
 
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = mAPIClient.getRealmInstance();
         try {
             mAwaitDone = new AtomicBoolean(false);
             mAPIClient.getViewableUserIds(new APIClient.ViewableUserIdsListener() {
@@ -219,7 +213,7 @@ public class APIClientTest {
     public void testNoNotesBeforeEarlyTimePeriod() {
         testSignInSuccess();
 
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = mAPIClient.getRealmInstance();
         try {
             mAwaitDone = new AtomicBoolean(false);
 
@@ -255,7 +249,7 @@ public class APIClientTest {
     public void testGetNotes() {
         testPostNote();
 
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = mAPIClient.getRealmInstance();
         try {
             mAwaitDone = new AtomicBoolean(false);
 
@@ -289,7 +283,7 @@ public class APIClientTest {
     public void testPostNote() {
         testSignInSuccess();
 
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = mAPIClient.getRealmInstance();
         try {
             Note note = new Note();
             note.setMessagetext("New note added from test.");
@@ -321,37 +315,42 @@ public class APIClientTest {
     public void testUploadDeviceData() {
         testSignInSuccess();
 
-        List<DeviceDataCBG> data = new ArrayList<>();
+        Realm realm = mAPIClient.getRealmInstance();
+        try {
+            List<DeviceDataCBG> data = new ArrayList<>();
 
-        for (int i = 0; i < 100; i++) {
-            DeviceDataCBG datum = new DeviceDataCBG();
-            datum.setDeviceId("test_cgm_device_id");
-            datum.setUploadId("");
+            for (int i = 0; i < 10; i++) {
+                DeviceDataCBG datum = new DeviceDataCBG();
+                datum.setDeviceId("test_cgm_device_id");
+                datum.setUploadId("");
 
-            datum.setUnits("mg/dL");
-            datum.setValue(50 + 2 * i);
+                datum.setUnits("mg/dL");
+                datum.setValue(100 + 5 * i);
 
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(new Date());
-            cal.add(Calendar.MINUTE, -15 * i);
-            datum.setTime(cal.getTime());
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(new Date());
+                cal.add(Calendar.MINUTE, -5 * i);
+                datum.setTime(cal.getTime());
 
-            data.add(datum);
-        }
-
-        mAwaitDone = new AtomicBoolean(false);
-        mAPIClient.uploadDeviceData(data, new APIClient.UploadDeviceDataListener() {
-            @Override
-            public void dataUploaded(List data, Exception error) {
-                mAWaitHashMap = new HashMap<String, Object>();
-                mAWaitHashMap.put("error", error);
-                mAwaitDone.set(true);
+                data.add(datum);
             }
-        });
-        await().atMost(10, TimeUnit.SECONDS).untilTrue(mAwaitDone);
 
-        Exception error = (Exception) mAWaitHashMap.get("error");
-        assertThat(error, nullValue());
+            mAwaitDone = new AtomicBoolean(false);
+            mAPIClient.uploadDeviceData(data, new APIClient.UploadDeviceDataListener() {
+                @Override
+                public void dataUploaded(List data, Exception error) {
+                    mAWaitHashMap = new HashMap<String, Object>();
+                    mAWaitHashMap.put("error", error);
+                    mAwaitDone.set(true);
+                }
+            });
+            await().atMost(10, TimeUnit.SECONDS).untilTrue(mAwaitDone);
+
+            Exception error = (Exception) mAWaitHashMap.get("error");
+            assertThat(error, nullValue());
+        } finally {
+            realm.close();
+        }
     }
 
     private void _testAllOn(String environment) throws AssertionError {
@@ -380,7 +379,6 @@ public class APIClientTest {
         Log.v(this.getClass().getName(), "APIClient set up for environment: " + environment);
     }
 
-    private RealmConfiguration mRealmConfiguration;
     private APIClient mAPIClient;
     private AtomicBoolean mAwaitDone;
     private HashMap<String, Object> mAWaitHashMap;

@@ -50,6 +50,7 @@ import io.realm.RealmConfiguration;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
+import io.tidepool.api.data.APIClientModule;
 import io.tidepool.api.data.CurrentUser;
 import io.tidepool.api.data.EmailAddress;
 import io.tidepool.api.data.Hashtag;
@@ -96,6 +97,9 @@ public class APIClient {
     // Base URL for device data uploads (e.g. https:://uploads.tidepool.org)
     private URL _uploadBaseURL;
 
+    // Realm DB configuration
+    private RealmConfiguration _realmConfiguration;
+
     // Static initialization
     static {
         __servers = new HashMap<>();
@@ -113,21 +117,6 @@ public class APIClient {
         }
     }
 
-    // Use a named realm db to avoid problems with app also using realm
-    static private RealmConfiguration _realmConfiguration = new RealmConfiguration.Builder()
-            .name("tidepool-api-client.realm")
-            .build();
-
-    // Realm configuration can be set from outside, which is useful for unit testing
-    public static void setRealmConfiguration(RealmConfiguration realmConfiguration) {
-        APIClient._realmConfiguration = realmConfiguration;
-    }
-
-    // Get the realm instance currently used by the APIClient
-    public static Realm getRealmInstance() {
-        return Realm.getInstance(APIClient._realmConfiguration);
-    }
-
     /**
      * Constructor
      *
@@ -135,6 +124,11 @@ public class APIClient {
      * @param server  Server to connect to, one of Production, Development or Staging
      */
     public APIClient(Context context, String server) {
+        Realm.init(context);
+
+        // Setup Realm configuration
+        setRealmName("tidepool-api-client.realm");
+
         setServer(server);
 
         // Set up the disk cache for caching responses
@@ -173,6 +167,26 @@ public class APIClient {
         }
     }
 
+    // Realm configuration can be set from outside, which is useful for unit testing
+    public void setRealmName(String realmName) {
+        // Name the realm file and modules to avoid problems when main app also uses realm
+        _realmConfiguration = new RealmConfiguration.Builder()
+                .name(realmName)
+                .modules(new APIClientModule())
+                .deleteRealmIfMigrationNeeded()
+                .build();
+    }
+
+    // Get the Realm instance currently used by the APIClient
+    public Realm getRealmInstance() {
+        return Realm.getInstance(_realmConfiguration);
+    }
+
+    // Delete Realm DB
+    public void deleteRealm() {
+        Realm.deleteRealm(_realmConfiguration);
+    }
+
     /**
      * Returns the current user. Only valid if authenticated.
      *
@@ -181,7 +195,7 @@ public class APIClient {
     public User getUser() {
         User user = null;
 
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = getRealmInstance();
         try {
             RealmResults<Session> results = realm.where(Session.class)
                     .findAll();
@@ -203,7 +217,7 @@ public class APIClient {
     public String getSessionId() {
         String sessionId = null;
 
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = getRealmInstance();
         try {
             RealmResults<Session> results = realm.where(Session.class)
                     .findAll();
@@ -241,7 +255,7 @@ public class APIClient {
      */
     public Request signIn(String username, String password, final SignInListener listener) {
         // Clear out the database, just in case there is anything left over
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = getRealmInstance();
         try {
             realm.beginTransaction();
             realm.where(Session.class).findAll().deleteAllFromRealm();
@@ -274,7 +288,7 @@ public class APIClient {
             public void onResponse(String response) {
                 Log.d(LOG_TAG, "Login success: " + response);
 
-                Realm realm = APIClient.getRealmInstance();
+                Realm realm = getRealmInstance();
                 try {
                     RealmResults<Session> sessions = realm.where(Session.class).findAll();
                     if (sessions.size() == 0) {
@@ -310,7 +324,7 @@ public class APIClient {
             protected Response<String> parseNetworkResponse(NetworkResponse response) {
                 String sessionId = response.headers.get(HEADER_SESSION_ID);
                 if (sessionId != null) {
-                    Realm realm = APIClient.getRealmInstance();
+                    Realm realm = getRealmInstance();
                     try {
                         realm.beginTransaction();
 
@@ -380,7 +394,7 @@ public class APIClient {
             protected Response<String> parseNetworkResponse(NetworkResponse response) {
                 String sessionId = response.headers.get(HEADER_SESSION_ID);
                 if (sessionId != null) {
-                    Realm realm = APIClient.getRealmInstance();
+                    Realm realm = getRealmInstance();
                     try {
                         realm.beginTransaction();
 
@@ -489,7 +503,7 @@ public class APIClient {
                     return;
                 }
 
-                Realm realm = APIClient.getRealmInstance();
+                Realm realm = getRealmInstance();
                 try {
                     realm.beginTransaction();
                     Note sentNote = realm.copyToRealmOrUpdate(note);
@@ -617,7 +631,7 @@ public class APIClient {
             @Override
             public void onResponse(String response) {
                 // All is well. Delete the note from our database.
-                Realm realm = APIClient.getRealmInstance();
+                Realm realm = getRealmInstance();
                 try {
                     realm.beginTransaction();
                     realm.where(Note.class).equalTo("id", noteId).findAll().deleteAllFromRealm();
@@ -698,7 +712,7 @@ public class APIClient {
 
     public void clearDatabase() {
         // Clean  out the database
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = getRealmInstance();
         try {
             realm.beginTransaction();
             realm.where(CurrentUser.class).findAll().deleteAllFromRealm();
@@ -791,7 +805,7 @@ public class APIClient {
     public Request getViewableUserIds(final ViewableUserIdsListener listener) {
         StringRequest req = null;
 
-        Realm realm = APIClient.getRealmInstance();
+        Realm realm = getRealmInstance();
         try {
             // Build the URL
             String url = null;
@@ -805,7 +819,7 @@ public class APIClient {
             req = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
                 @Override
                 public void onResponse(String response) {
-                    Realm realm = APIClient.getRealmInstance();
+                    Realm realm = getRealmInstance();
                     try {
                         JSONObject jsonObject = null;
                         try {
@@ -887,7 +901,7 @@ public class APIClient {
                 fakeProfile.setUserId(userId);
 
                 Log.d(LOG_TAG, "Profile response: " + response);
-                Realm realm = APIClient.getRealmInstance();
+                Realm realm = getRealmInstance();
                 try {
                     realm.beginTransaction();
                     Profile profile = realm.copyToRealmOrUpdate(fakeProfile);
@@ -955,7 +969,7 @@ public class APIClient {
                 // Returned JSON is an object array called "messages"
                 Log.d(LOG_TAG, "Messages response:" + json);
 
-                Realm realm = APIClient.getRealmInstance();
+                Realm realm = getRealmInstance();
                 try {
                     RealmList<Note> noteList = new RealmList<>();
                     realm.beginTransaction();
