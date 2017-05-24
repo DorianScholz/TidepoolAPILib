@@ -4,6 +4,7 @@ import java.util.Date;
 
 public class DeviceDataCBG {
     // CBG specific data
+    @SuppressWarnings("FieldCanBeLocal")
     private String type = "cbg";
     private String units;
     private double value;

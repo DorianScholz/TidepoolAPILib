@@ -76,7 +76,7 @@ public class APIClientTest {
         mAPIClient.signIn("ethan+urchintests@tidepool.org", "urchintests", new APIClient.SignInListener() {
             @Override
             public void signInComplete(User user, Exception exception) {
-                mAWaitHashMap = new HashMap<String, Object>();
+                mAWaitHashMap = new HashMap<>();
                 mAWaitHashMap.put("user", user);
                 mAWaitHashMap.put("exception", exception);
                 mAwaitDone.set(true);
@@ -98,7 +98,7 @@ public class APIClientTest {
         mAPIClient.signIn("ethan+urchintests@tidepool.org", "wrong-password", new APIClient.SignInListener() {
             @Override
             public void signInComplete(User user, Exception error) {
-                mAWaitHashMap = new HashMap<String, Object>();
+                mAWaitHashMap = new HashMap<>();
                 mAWaitHashMap.put("user", user);
                 mAWaitHashMap.put("error", error);
                 mAwaitDone.set(true);
@@ -120,7 +120,7 @@ public class APIClientTest {
         mAPIClient.signOut(new APIClient.SignOutListener() {
             @Override
             public void signedOut(int responseCode, Exception error) {
-                mAWaitHashMap = new HashMap<String, Object>();
+                mAWaitHashMap = new HashMap<>();
                 mAWaitHashMap.put("responseCode", responseCode);
                 mAWaitHashMap.put("error", error);
                 mAwaitDone.set(true);
@@ -142,7 +142,7 @@ public class APIClientTest {
         mAPIClient.refreshToken(new APIClient.RefreshTokenListener() {
             @Override
             public void tokenRefreshed(Exception error) {
-                mAWaitHashMap = new HashMap<String, Object>();
+                mAWaitHashMap = new HashMap<>();
                 mAWaitHashMap.put("error", error);
                 mAwaitDone.set(true);
             }
@@ -165,7 +165,7 @@ public class APIClientTest {
             mAPIClient.getProfileForUserId(mAPIClient.getUser().getUserid(), new APIClient.ProfileListener() {
                 @Override
                 public void profileReceived(Profile profile, Exception error) {
-                    mAWaitHashMap = new HashMap<String, Object>();
+                    mAWaitHashMap = new HashMap<>();
                     mAWaitHashMap.put("profile", profile);
                     mAWaitHashMap.put("error", error);
                     mAwaitDone.set(true);
@@ -192,7 +192,7 @@ public class APIClientTest {
             mAPIClient.getViewableUserIds(new APIClient.ViewableUserIdsListener() {
                 @Override
                 public void fetchComplete(RealmList<SharedUserId> userIds, Exception error) {
-                    mAWaitHashMap = new HashMap<String, Object>();
+                    mAWaitHashMap = new HashMap<>();
                     mAWaitHashMap.put("userIds", userIds);
                     mAWaitHashMap.put("error", error);
                     mAwaitDone.set(true);
@@ -226,7 +226,7 @@ public class APIClientTest {
             mAPIClient.getNotes(mAPIClient.getUser().getUserid(), from.getTime(), to.getTime(), new APIClient.NotesListener() {
                 @Override
                 public void notesReceived(RealmList<Note> notes, Exception error) {
-                    mAWaitHashMap = new HashMap<String, Object>();
+                    mAWaitHashMap = new HashMap<>();
                     mAWaitHashMap.put("notes", notes);
                     mAWaitHashMap.put("error", error);
                     mAwaitDone.set(true);
@@ -261,7 +261,7 @@ public class APIClientTest {
             mAPIClient.getNotes(mAPIClient.getUser().getUserid(), from, to, new APIClient.NotesListener() {
                 @Override
                 public void notesReceived(RealmList<Note> notes, Exception error) {
-                    mAWaitHashMap = new HashMap<String, Object>();
+                    mAWaitHashMap = new HashMap<>();
                     mAWaitHashMap.put("notes", notes);
                     mAWaitHashMap.put("error", error);
                     mAwaitDone.set(true);
@@ -297,7 +297,7 @@ public class APIClientTest {
             mAPIClient.postNote(note, new APIClient.PostNoteListener() {
                 @Override
                 public void notePosted(Note note, Exception error) {
-                    mAWaitHashMap = new HashMap<String, Object>();
+                    mAWaitHashMap = new HashMap<>();
                     mAWaitHashMap.put("error", error);
                     mAwaitDone.set(true);
                 }
@@ -339,7 +339,7 @@ public class APIClientTest {
             mAPIClient.uploadDeviceData(data, new APIClient.UploadDeviceDataListener() {
                 @Override
                 public void dataUploaded(List data, Exception error) {
-                    mAWaitHashMap = new HashMap<String, Object>();
+                    mAWaitHashMap = new HashMap<>();
                     mAWaitHashMap.put("error", error);
                     mAwaitDone.set(true);
                 }
@@ -364,7 +364,7 @@ public class APIClientTest {
                 Log.v(this.getClass().getName(), "invoking method: " + methodName);
                 try {
                     method.invoke(this);
-                } catch (IllegalAccessException e) {
+                } catch (IllegalAccessException ignored) {
                 } catch (InvocationTargetException e) {
                     if (e.getTargetException() instanceof AssertionError) {
                         throw (AssertionError) e.getTargetException();

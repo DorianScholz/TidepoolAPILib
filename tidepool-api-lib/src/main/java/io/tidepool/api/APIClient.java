@@ -63,6 +63,7 @@ import io.tidepool.api.data.User;
 import io.tidepool.api.util.HashtagUtils;
 import io.tidepool.api.util.MiscUtils;
 
+@SuppressWarnings({"WeakerAccess"})
 public class APIClient {
 
     public static final String PRODUCTION = "Production";
@@ -81,9 +82,6 @@ public class APIClient {
 
     // Header label for the session token
     private static final String HEADER_SESSION_ID = "x-tidepool-session-token";
-
-    // Key into the shared preferences database for our own preferences
-    private static final String PREFS_KEY = "APIClient";
 
     // Map of server names to base URLs
     private static final Map<String, URL> __servers;
@@ -271,7 +269,7 @@ public class APIClient {
         headers.put("Authorization", "Basic " + base64string);
 
         // Build the URL
-        String url = null;
+        String url;
         try {
             url = new URL(getBaseURL(), "/auth/login").toString();
         } catch (MalformedURLException e) {
@@ -371,7 +369,7 @@ public class APIClient {
         }
 
         // Build the URL
-        String url = null;
+        String url;
         try {
             url = new URL(getBaseURL(), "/auth/login").toString();
         } catch (MalformedURLException e) {
@@ -475,7 +473,7 @@ public class APIClient {
 
     public Request postNote(final Note note, final PostNoteListener listener) {
         // Build the URL
-        String url = null;
+        String url;
         try {
             url = new URL(getBaseURL(), "/message/send/" + note.getGroupid()).toString();
         } catch (MalformedURLException e) {
@@ -491,8 +489,8 @@ public class APIClient {
                 // Add the message to the database
                 Log.d(LOG_TAG, "Post note response data: " + response);
 
-                // The repsonse only contains the ID.
-                String noteId = null;
+                // The response only contains the ID.
+                String noteId;
                 try {
                     JSONObject noteIdobject = new JSONObject(response);
                     noteId = noteIdobject.getString("id");
@@ -556,7 +554,7 @@ public class APIClient {
 
     public Request updateNote(final Note note, final UpdateNoteListener listener) {
         // Build the URL
-        String url = null;
+        String url;
         try {
             url = new URL(getBaseURL(), "/message/edit/" + note.getId()).toString();
         } catch (MalformedURLException e) {
@@ -617,7 +615,7 @@ public class APIClient {
     }
 
     public Request deleteNote(Note note, final DeleteNoteListener listener) {
-        String url = null;
+        String url;
         try {
             url = new URL(getBaseURL(), "/message/remove/" + note.getId()).toString();
         } catch (MalformedURLException e) {
@@ -665,7 +663,7 @@ public class APIClient {
 
     public Request uploadDeviceData(final List data, final UploadDeviceDataListener listener) {
         // Build the URL
-        String url = null;
+        String url;
         try {
             url = new URL(getUploadBaseURL(), "/data/").toString();
         } catch (MalformedURLException e) {
@@ -744,7 +742,8 @@ public class APIClient {
         }.getType();
         Type sharedIdToken = new TypeToken<RealmList<SharedUserId>>() {
         }.getType();
-        Gson gson = new GsonBuilder()
+
+        return new GsonBuilder()
                 .setExclusionStrategies(new ExclusionStrategy() {
                     @Override
                     public boolean shouldSkipField(FieldAttributes f) {
@@ -765,7 +764,7 @@ public class APIClient {
 
                     @Override
                     public RealmList<EmailAddress> read(JsonReader in) throws IOException {
-                        RealmList<EmailAddress> list = new RealmList<EmailAddress>();
+                        RealmList<EmailAddress> list = new RealmList<>();
                         in.beginArray();
                         while (in.hasNext()) {
                             list.add(new EmailAddress(in.nextString()));
@@ -783,7 +782,7 @@ public class APIClient {
 
                     @Override
                     public RealmList<SharedUserId> read(JsonReader in) throws IOException {
-                        RealmList<SharedUserId> list = new RealmList<SharedUserId>();
+                        RealmList<SharedUserId> list = new RealmList<>();
                         in.beginArray();
                         while (in.hasNext()) {
                             list.add(new SharedUserId(in.nextString()));
@@ -794,8 +793,6 @@ public class APIClient {
                 })
                 .setDateFormat(dateFormat)
                 .create();
-
-        return gson;
     }
 
     public static abstract class ViewableUserIdsListener {
@@ -808,7 +805,7 @@ public class APIClient {
         Realm realm = getRealmInstance();
         try {
             // Build the URL
-            String url = null;
+            String url;
             try {
                 url = new URL(getBaseURL(), "/access/groups/" + getUser().getUserid()).toString();
             } catch (MalformedURLException e) {
@@ -821,7 +818,7 @@ public class APIClient {
                 public void onResponse(String response) {
                     Realm realm = getRealmInstance();
                     try {
-                        JSONObject jsonObject = null;
+                        JSONObject jsonObject;
                         try {
                             Log.d(LOG_TAG, "Groups: " + response);
                             jsonObject = new JSONObject(response);
@@ -883,7 +880,7 @@ public class APIClient {
 
     public Request getProfileForUserId(final String userId, final ProfileListener listener) {
         // Build the URL
-        String url = null;
+        String url;
         try {
             url = new URL(getBaseURL(), "/metadata/" + userId + "/profile").toString();
         } catch (MalformedURLException e) {
@@ -946,7 +943,7 @@ public class APIClient {
     }
 
     public Request getNotes(final String userId, final Date fromDate, final Date toDate, final NotesListener listener) {
-        String url = null;
+        String url;
         try {
             DateFormat df = new SimpleDateFormat(MESSAGE_DATE_FORMAT, Locale.US);
             String extension = "/message/notes/" + userId + "?starttime=" +
@@ -1029,12 +1026,7 @@ public class APIClient {
                             }
                             noteList.add(note);
                         }
-                    } catch (JSONException e) {
-                        Log.e(LOG_TAG, "Error parsing notes: " + e);
-                        realm.cancelTransaction();
-                        listener.notesReceived(null, e);
-                        return;
-                    } catch (com.google.gson.JsonSyntaxException e) {
+                    } catch (JSONException | com.google.gson.JsonSyntaxException e) {
                         Log.e(LOG_TAG, "Error parsing notes: " + e);
                         realm.cancelTransaction();
                         listener.notesReceived(null, e);
