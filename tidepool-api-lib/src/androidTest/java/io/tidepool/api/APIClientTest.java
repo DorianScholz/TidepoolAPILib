@@ -29,9 +29,11 @@ import java.util.regex.Pattern;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.tidepool.api.data.DeviceDataCBG;
+import io.tidepool.api.data.DeviceDataCommon;
 import io.tidepool.api.data.Note;
 import io.tidepool.api.data.Profile;
 import io.tidepool.api.data.SharedUserId;
+import io.tidepool.api.data.UploadMetadata;
 import io.tidepool.api.data.User;
 import io.tidepool.api.util.MiscUtils;
 
@@ -317,12 +319,29 @@ public class APIClientTest {
 
         Realm realm = mAPIClient.getRealmInstance();
         try {
-            List<DeviceDataCBG> data = new ArrayList<>();
+            UploadMetadata uploadMetadata = new UploadMetadata();
+            uploadMetadata.setByUser("");
+            uploadMetadata.setVersion(BuildConfig.APPLICATION_ID + "." + this.getClass().getSimpleName() + ":" + BuildConfig.VERSION_NAME);
+            uploadMetadata.setUploadId("upid_APIClientTest");
+            uploadMetadata.setDeviceId("APIClientTest_cgm_device_id");
+            uploadMetadata.setDeviceModel("FreeStyle Libre");
+            uploadMetadata.setDeviceSerialNumber("1234567890abcdef");
+            uploadMetadata.setTimeProcessing("none");
 
-            for (int i = 0; i < 10; i++) {
-                DeviceDataCBG datum = new DeviceDataCBG();
-                datum.setDeviceId("test_cgm_device_id");
-                datum.setUploadId("");
+            List<String> manufacturers = new ArrayList<>();
+            manufacturers.add("Abbot");
+            uploadMetadata.setDeviceManufacturers(manufacturers);
+
+            List<String> tags = new ArrayList<>();
+            tags.add("cgm");
+            uploadMetadata.setDeviceTags(tags);
+
+
+            List<DeviceDataCommon> data = new ArrayList<>();
+            data.add(uploadMetadata);
+
+            for (int i = 0; i < 5; i++) {
+                DeviceDataCBG datum = new DeviceDataCBG(uploadMetadata);
 
                 datum.setUnits("mg/dL");
                 datum.setValue(100 + 5 * i);

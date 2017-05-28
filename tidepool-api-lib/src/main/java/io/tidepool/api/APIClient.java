@@ -52,6 +52,7 @@ import io.realm.RealmObject;
 import io.realm.RealmResults;
 import io.tidepool.api.data.APIClientModule;
 import io.tidepool.api.data.CurrentUser;
+import io.tidepool.api.data.DeviceDataCommon;
 import io.tidepool.api.data.EmailAddress;
 import io.tidepool.api.data.Hashtag;
 import io.tidepool.api.data.Note;
@@ -60,6 +61,7 @@ import io.tidepool.api.data.Profile;
 import io.tidepool.api.data.Session;
 import io.tidepool.api.data.SharedUserId;
 import io.tidepool.api.data.User;
+import io.tidepool.api.util.GsonDateAdapter;
 import io.tidepool.api.util.HashtagUtils;
 import io.tidepool.api.util.MiscUtils;
 
@@ -72,7 +74,7 @@ public class APIClient {
 
     private static final String UPLOADS = "Uploads";
 
-    private static final String LOG_TAG = "APIClient";
+    private static final String LOG_TAG = "TidepoolAPIClient";
 
     // Date format for most things,
     public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZZZZZ";
@@ -312,7 +314,7 @@ public class APIClient {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.d(LOG_TAG, "Login failure: " + error);
+                networkErrorHandler("logIn", error);
                 listener.signInComplete(null, error);
             }
         }) {
@@ -385,6 +387,7 @@ public class APIClient {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                networkErrorHandler("refreshToken", error);
                 listener.tokenRefreshed(error);
             }
         }) {
@@ -443,6 +446,7 @@ public class APIClient {
         Request<Integer> req = new Request<Integer>(Request.Method.POST, url, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                networkErrorHandler("signOut", error);
                 listener.signedOut(0, error);
             }
         }) {
@@ -522,7 +526,7 @@ public class APIClient {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e(LOG_TAG, "Failed to post message: " + error);
+                networkErrorHandler("postNote", error);
                 listener.notePosted(null, error);
             }
         }) {
@@ -586,6 +590,7 @@ public class APIClient {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                networkErrorHandler("updateNote", error);
                 listener.noteUpdated(null, error);
             }
         }) {
@@ -642,7 +647,7 @@ public class APIClient {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e(LOG_TAG, "Error deleting note: " + error);
+                networkErrorHandler("deleteNote", error);
                 listener.noteDeleted(error);
             }
         }) {
@@ -683,7 +688,7 @@ public class APIClient {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e(LOG_TAG, "Failed to upload data: " + error);
+                networkErrorHandler("uploadDeviceData", error);
                 listener.dataUploaded(null, error);
             }
         }) {
@@ -755,6 +760,7 @@ public class APIClient {
                         return false;
                     }
                 })
+                .registerTypeAdapter(DeviceDataCommon.DeviceTime.class, new GsonDateAdapter(false, false))
                 .registerTypeAdapter(emailToken, new TypeAdapter<RealmList<EmailAddress>>() {
 
                     @Override
@@ -857,6 +863,7 @@ public class APIClient {
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
+                    networkErrorHandler("getViewableUserIds", error);
                     listener.fetchComplete(null, error);
                 }
             }) {
@@ -922,7 +929,7 @@ public class APIClient {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e(LOG_TAG, "Profile error: " + error);
+                networkErrorHandler("getProfileForUserId", error);
                 if (listener != null) {
                     listener.profileReceived(null, error);
                 }
@@ -1042,6 +1049,7 @@ public class APIClient {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                networkErrorHandler("getNotes", error);
                 listener.notesReceived(null, error);
             }
         }) {
@@ -1053,6 +1061,13 @@ public class APIClient {
 
         _requestQueue.add(req);
         return req;
+    }
+
+    private void networkErrorHandler(String methodName, VolleyError error) {
+        Log.e(LOG_TAG, "Network error in " + methodName + ": " + error);
+        if (error.networkResponse != null && error.networkResponse.data != null) {
+            Log.d(LOG_TAG, "Server returned error message: " + new String(error.networkResponse.data));
+        }
     }
 
     protected URL getBaseURL() {
