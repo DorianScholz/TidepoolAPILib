@@ -1,5 +1,5 @@
 # Tidepool API Lib
-The tidepool-api-lib is a library for Android apps to communicate with the servers of the [Tidepool](http://tidepool.io/) project.
+The tidepool-api-lib is a library for Android apps to communicate with the servers of the [Tidepool](http://tidepool.org/) project.
 So far it only contains the functionality needed by the [OpenLibre](https://github.com/DorianScholz/OpenLibre) app:
 
  * login/out
